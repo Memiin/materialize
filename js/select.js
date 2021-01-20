@@ -3,7 +3,8 @@
 
   let _defaults = {
     classes: '',
-    dropdownOptions: {}
+    dropdownOptions: {},
+    onSelectedItemChanged: null
   };
 
   /**
@@ -30,6 +31,7 @@
       /**
        * Options for the select
        * @member FormSelect#options
+       * @prop {Function} onSelectedItemChanged - Callback function called after an option was clicked
        */
       this.options = $.extend({}, FormSelect.defaults, options);
 
@@ -148,11 +150,17 @@
           $(this._valueDict[key].el).prop('selected', selected);
           this.$el.trigger('change');
         }
+
+        // Call onSelectedItemChanged callback
+        if (typeof this.options.onSelectedItemChanged === 'function') {
+          this.options.onSelectedItemChanged.call(
+            this,
+            this.isMultiple ? this.getSelectedValues() : this._valueDict[key].el
+          );
+        }
       }
 
-      if (!this.isMultiple) {
-        this.dropdown.close();
-      }
+      e.stopPropagation();
     }
 
     /**
@@ -241,14 +249,12 @@
       // Initialize dropdown
       if (!this.el.disabled) {
         let dropdownOptions = $.extend({}, this.options.dropdownOptions);
-        let userOnOpenEnd = dropdownOptions.onOpenEnd;
 
         // Add callback for centering selected option when dropdown content is scrollable
         dropdownOptions.onOpenEnd = (el) => {
           let selectedOption = $(this.dropdownOptions)
             .find('.selected')
             .first();
-
           if (selectedOption.length) {
             // Focus selected option in dropdown
             M.keyDown = true;
@@ -274,7 +280,6 @@
 
         // Prevent dropdown from closing too early
         dropdownOptions.closeOnClick = false;
-
         this.dropdown = M.Dropdown.init(this.input, dropdownOptions);
       }
 
